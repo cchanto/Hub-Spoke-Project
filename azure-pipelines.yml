@@ -1,0 +1,66 @@
+trigger:
+- '*'
+
+pr:
+- '*'
+
+jobs:
+- job: Initialize
+  displayName: 'Initialize Terraform'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - task: HashiCorp/setup-terraform@v1
+      inputs:
+        terraformVersion: '1.0.0'
+        checkLatestVersion: true
+
+    - checkout: self
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'init'
+        workingDirectory: 'path/to/your/terraform/configuration'
+
+- job: TerraformPlan
+  displayName: 'Terraform Plan'
+  dependsOn: Initialize
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'plan'
+        workingDirectory: 'path/to/your/terraform/configuration'
+      displayName: 'Terraform Plan'
+      env:
+        ARM_CLIENT_ID: $(servicePrincipalId)
+        ARM_CLIENT_SECRET: $(servicePrincipalKey)
+        ARM_SUBSCRIPTION_ID: $(subscriptionId)
+        ARM_TENANT_ID: $(tenantId)
+        TF_VAR_location: $(location)
+        TF_VAR_prefix: $(prefix)
+
+- job: TerraformApply
+  displayName: 'Terraform Apply'
+  dependsOn: TerraformPlan
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'apply'
+        workingDirectory: 'path/to/your/terraform/configuration'
+        commandOptions: '-auto-approve'
+      displayName: 'Terraform Apply'
+      env:
+        ARM_CLIENT_ID: $(servicePrincipalId)
+        ARM_CLIENT_SECRET: $(servicePrincipalKey)
+        ARM_SUBSCRIPTION_ID: $(subscriptionId)
+        ARM_TENANT_ID: $(tenantId)
+        TF_VAR_location: $(location)
+        TF_VAR_prefix: $(prefix)
